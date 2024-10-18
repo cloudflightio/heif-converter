@@ -1,12 +1,7 @@
 name: Build Node.js Artifact
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths:
-      - 'src/lib.cc'
-      - '.github/workflows/build-node-artifacts.yml'
-      - '**/npm/**/Dockerfile'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -22,8 +17,6 @@ jobs:
             platform: darwin-x64
           - os: windows-latest
             platform: win32-x64
-          - os: windows-latest
-            platform: win32-ia32
 
     steps:
     - name: Checkout repository
@@ -73,6 +66,8 @@ jobs:
         cp platform/${{ matrix.PLATFORM }}/bin/libde265.dll ./release/${{ matrix.PLATFORM }}/lib/libde265.dll
         cp platform/${{ matrix.PLATFORM }}/bin/libx265.dll ./release/${{ matrix.PLATFORM }}/lib/libx265.dll
         cp platform/${{ matrix.PLATFORM }}/bin/libpng16.dll ./release/${{ matrix.PLATFORM }}/lib/libpng16.dll
+        cp platform/${{ matrix.PLATFORM }}/bin/zlib1.dll ./release/${{ matrix.PLATFORM }}/lib/zlib1.dll
+        cp -r npm/${{ matrix.PLATFORM }}/* ./release/${{ matrix.PLATFORM }}
 
     - name: Run tests
       if: "!contains(matrix.os, 'ubuntu')"

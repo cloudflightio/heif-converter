@@ -1,6 +1,6 @@
 {
   "name": "@myunisoft/heif-converter",
-  "description": "Bindings for the libheif C API to convert an image in Node.js",
+  "description": "Bindings for the libheif C API to convert an image in Node.js, including Windows fix regarding zlib missing",
   "version": "0.2.2",
   "keywords": [
     "heif",
@@ -17,7 +17,7 @@
   "gypfile": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/MyUnisoft/heif-converter.git"
+    "url": "https://github.com/cloudflightio/heif-converter"
   },
   "bugs": {
     "url": "https://github.com/MyUnisoft/heif-converter/issues"

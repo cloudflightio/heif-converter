@@ -6,7 +6,7 @@
   "homepage": "https://github.com/MyUnisoft/heif-converter",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MyUnisoft/heif-converter.git",
+    "url": "git+https://github.com/cloudflightio/heif-converter",
     "directory": "npm/win32-x64"
   },
   "license": "MIT",

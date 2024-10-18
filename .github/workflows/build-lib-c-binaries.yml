@@ -1,10 +1,7 @@
 name: Build lib C binaries
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths:
-      - '**/platform/**/Dockerfile'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,9 +18,6 @@ jobs:
           - os: windows-latest
             platform: win32-x64
             arch: x64
-          - os: windows-latest
-            platform: win32-ia32
-            arch: x86
 
     steps:
     - name: Checkout repository
@@ -57,7 +51,8 @@ jobs:
         docker cp $env:source/bin/libde265.dll $env:destination/bin/libde265.dll
         docker cp $env:source/bin/libx265.dll $env:destination/bin/libx265.dll
         docker cp $env:source/bin/libpng16.dll $env:destination/bin/libpng16.dll
-
+        docker cp $env:source/bin/zlib1.dll $env:destination/bin/zlib1.dll
+        
         # Copy lib files
         docker cp $env:source/lib/heif.lib $env:destination/lib/heif.lib
         docker cp $env:source/lib/turbojpeg.lib $env:destination/lib/turbojpeg.lib
