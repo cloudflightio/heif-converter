@@ -45,7 +45,7 @@ If you wish to contribute or build libheif from source, you can visit [this link
 ## 🦴 Installation
 
 ```bash
-npm install @myunisoft/heif-converter
+npm install @cloudflight/heif-converter
 ```
 
 ## 🚀 API

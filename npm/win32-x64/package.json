@@ -1,8 +1,8 @@
 {
-  "name": "@myunisoft/heif-converter.win32-x64",
+  "name": "@cloudflight/heif-converter.win32-x64",
   "version": "0.1.4",
   "description": "Prebuilt heif-converter for use with Windows x64",
-  "author": "Nicolas Marteau <nico_mart@hotmail.fr>",
+  "author": "Dennis Gerritsen <dennis.gerritsen@cloudflight.io>",
   "homepage": "https://github.com/MyUnisoft/heif-converter",
   "repository": {
     "type": "git",

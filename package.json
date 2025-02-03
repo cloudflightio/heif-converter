@@ -32,9 +32,9 @@
     "build": "node-gyp build --directory=src"
   },
   "publishConfig": {
-    "@myunisoft:registry": "https://registry.npmjs.org/"
+    "@cloudflight:registry": "https://registry.npmjs.org/"
   },
-  "author": "Nicolas Marteau <nico_mart@hotmail.fr>",
+  "author": "Dennis Gerritsen <dennis.gerritsen@cloudflight.io>",
   "license": "MIT",
   "files": [
     "index.js",
@@ -55,7 +55,7 @@
     "@myunisoft/heif-converter.linux-x64": "^0.1.6",
     "@myunisoft/heif-converter.linuxmusl-x64": "^0.2.4",
     "@myunisoft/heif-converter.win32-ia32": "^0.0.6",
-    "@myunisoft/heif-converter.win32-x64": "^0.1.4"
+    "@myunisoft/cloudflight.win32-x64": "^0.1.4"
   },
   "dependencies": {
     "detect-libc": "^2.0.3"
