@@ -6,7 +6,7 @@
   "homepage": "https://github.com/MyUnisoft/heif-converter",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MyUnisoft/heif-converter.git",
+    "url": "git+https://github.com/cloudflightio/heif-converter.git",
     "directory": "npm/win32-x64"
   },
   "license": "MIT",
@@ -15,7 +15,7 @@
     "lib"
   ],
   "publishConfig": {
-    "@myunisoft:registry": "https://registry.npmjs.org/"
+    "@cloudflight:registry": "https://registry.npmjs.org/"
   },
   "exports": {
     "./converter.node": "./lib/converter.win32-x64.node"
