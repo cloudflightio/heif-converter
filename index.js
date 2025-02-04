@@ -14,7 +14,7 @@ const binaryPaths = [
   `./src/build/Release/converter.node`,
   `@myunisoft/heif-converter.${kPlatform}/converter.node`,
   `../../../apps/desktop/main/assets/heif-converter/heif-converter.win32-x64/lib/converter.win32-x64.node`,
-    `../../../binaries/heif-converter.win32-x64/lib/converter.win32-x64.node`
+    `../../../../binaries/heif-converter.win32-x64/lib/converter.win32-x64.node`,
 ];
 let lib = null;
 const errors = [];
