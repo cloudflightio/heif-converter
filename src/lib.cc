@@ -67,7 +67,7 @@ public:
         }
 
         struct heif_image* img;
-        err = heif_decode_image(handle, &img, heif_colorspace_RGB, heif_chroma_interleaved_RGB, nullptr);
+        err = heif_decode_image(handle, &img, heif_colorspace_RGB, heif_chroma_interleaved_RGBA, nullptr);
         if (err.code != heif_error_Ok) {
             heif_image_handle_release(handle);
             heif_context_free(ctx);
@@ -85,7 +85,7 @@ public:
         unsigned long jpegSize = 0;
 
         int flags = 0;
-        int pixelFormat = TJPF_RGB;
+        int pixelFormat = TJPF_RGBA;
 
         int ret = tjCompress2(tjInstance, data, width, 0, height, pixelFormat, &jpegBuf, &jpegSize, TJSAMP_444, quality, flags);
         if (ret != 0) {
