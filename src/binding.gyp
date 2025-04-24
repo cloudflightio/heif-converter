@@ -133,7 +133,8 @@
                   "<(VCPKG_LIB_ROOT)/bin/turbojpeg.dll",
                   "<(VCPKG_LIB_ROOT)/bin/libde265.dll",
                   "<(VCPKG_LIB_ROOT)/bin/libx265.dll",
-                  "<(VCPKG_LIB_ROOT)/bin/libpng16.dll"
+                  "<(VCPKG_LIB_ROOT)/bin/libpng16.dll",
+                  "<(VCPKG_LIB_ROOT)/bin/zlib1.dll"
                 ]
               }
             ]
