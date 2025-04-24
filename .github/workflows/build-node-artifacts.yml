@@ -19,7 +19,8 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            platform: win32-ia32
+            platform: win32-x64
+            arch: x64
 
     steps:
     - name: Harden Runner
