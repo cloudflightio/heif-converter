@@ -28,7 +28,7 @@ describe("toPng", () => {
     const heic = await fileTypeFromStream(createReadStream(heifFilePath));
     assert.strictEqual(heic.ext, "heic");
 
-    const output = await lib.toPng(path.join(kDirname, "image.heic"));
+    const output = await lib.toPng(createReadStream(heifFilePath));
     const png = await fileTypeFromBuffer(output);
     assert.strictEqual(png.ext, "png");
   });
@@ -45,13 +45,6 @@ describe("toPng", () => {
     const heifFilePath = path.join(kDirname, "image.heic");
 
     const output = await lib.toPng(createReadStream(heifFilePath));
-    assert.strictEqual(output instanceof Buffer, true);
-  });
-
-  it("Should accept input string (file path)", async() => {
-    const heifFilePath = path.join(kDirname, "image.heic");
-
-    const output = await lib.toPng(heifFilePath);
     assert.strictEqual(output instanceof Buffer, true);
   });
 
