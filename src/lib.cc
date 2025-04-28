@@ -7,138 +7,14 @@
 #include <stdexcept>
 #include <cstring>
 
-enum InputType {
-    Buffer,
-    File
-};
-
-class ToJpegWorker : public Napi::AsyncWorker {
-public:
-    ToJpegWorker(const Napi::Value& input, heif_item_id image_id, const Napi::Object& options, Napi::Function& callback)
-        : Napi::AsyncWorker(callback), imageId(image_id) {
-            
-        if (input.IsBuffer()) {
-            Napi::Buffer<uint8_t> buffer = input.As<Napi::Buffer<uint8_t>>();
-            data = buffer.Data();
-            size = buffer.Length();
-            inputType = InputType::Buffer;
-            bufferRef = Napi::Persistent(buffer);
-        } else if (input.IsString()) {
-            filePath = input.As<Napi::String>();
-            inputType = InputType::File;
-        } else {
-            SetError("Invalid input type. Expected a Buffer or a String.");
-
-            return;  
-        }
-
-        quality = options.Get("quality").As<Napi::Number>().Int32Value();
-    }
-
-    ~ToJpegWorker() {}
-
-    void Execute() override {
-        struct heif_context* ctx = heif_context_alloc();
-        struct heif_error err;
-
-        if (inputType == InputType::Buffer) {
-            err = heif_context_read_from_memory(ctx, data, size, nullptr);
-        } else {
-            err = heif_context_read_from_file(ctx, filePath.c_str(), nullptr);
-        }
-
-        if (err.code != heif_error_Ok) {
-            heif_context_free(ctx);
-            SetError("Failed to read HEIF data: " + std::string(err.message));
-            return;
-        }
-
-        struct heif_image_handle* handle;
-        if (imageId == -1) {
-            err = heif_context_get_primary_image_handle(ctx, &handle);
-        } else {
-            err = heif_context_get_image_handle(ctx, imageId, &handle);
-        }
-
-        if (err.code != heif_error_Ok) {
-            heif_context_free(ctx);
-            SetError("Failed to get image handle: " + std::string(err.message));
-            return;
-        }
-
-        struct heif_image* img;
-        err = heif_decode_image(handle, &img, heif_colorspace_RGB, heif_chroma_interleaved_RGBA, nullptr);
-        if (err.code != heif_error_Ok) {
-            heif_image_handle_release(handle);
-            heif_context_free(ctx);
-            SetError("Failed to decode HEIF image: " + std::string(err.message));
-            return;
-        }
-
-        int width = heif_image_get_width(img, heif_channel_interleaved);
-        int height = heif_image_get_height(img, heif_channel_interleaved);
-        int stride;
-        const uint8_t* data = heif_image_get_plane_readonly(img, heif_channel_interleaved, &stride);
-
-        tjhandle tjInstance = tjInitCompress();
-        unsigned char* jpegBuf = nullptr;
-        unsigned long jpegSize = 0;
-
-        int flags = 0;
-        int pixelFormat = TJPF_RGBA;
-
-        int ret = tjCompress2(tjInstance, data, width, 0, height, pixelFormat, &jpegBuf, &jpegSize, TJSAMP_444, quality, flags);
-        if (ret != 0) {
-            tjDestroy(tjInstance);
-            heif_image_release(img);
-            heif_image_handle_release(handle);
-            heif_context_free(ctx);
-            SetError("Failed to compress JPEG: " + std::string(tjGetErrorStr2(tjInstance)));
-            return;
-        }
-
-        tjDestroy(tjInstance);
-
-        jpegData.assign(jpegBuf, jpegBuf + jpegSize);
-        tjFree(jpegBuf);
-
-        heif_image_release(img);
-        heif_image_handle_release(handle);
-        heif_context_free(ctx);
-    }
-
-    void OnOK() override {
-        Napi::HandleScope scope(Env());
-        Napi::Buffer<uint8_t> result = Napi::Buffer<uint8_t>::Copy(Env(), jpegData.data(), jpegData.size());
-        Callback().Call({Env().Null(), result});
-    }
-
-private:
-    InputType inputType;
-    Napi::Reference<Napi::Buffer<uint8_t>> bufferRef;
-    const uint8_t* data = nullptr;
-    size_t size = 0;
-    std::string filePath;
-    heif_item_id imageId;
-    int quality;
-    std::vector<uint8_t> jpegData;
-};
-
 class ToPngWorker : public Napi::AsyncWorker {
 public:
-    ToPngWorker(const Napi::Value& input, heif_item_id image_id, const Napi::Object& options, Napi::Function& callback)
+    ToPngWorker(const Napi::Buffer<uint8_t> buffer, heif_item_id image_id, const Napi::Object& options, Napi::Function& callback)
         : Napi::AsyncWorker(callback), imageId(image_id) {
-            
-        if (input.IsBuffer()) {
-            Napi::Buffer<uint8_t> buffer = input.As<Napi::Buffer<uint8_t>>();
-            data = buffer.Data();
-            size = buffer.Length();
-            inputType = InputType::Buffer;
-            bufferRef = Napi::Persistent(buffer);
-        } else {
-            filePath = input.As<Napi::String>();
-            inputType = InputType::File;
-        }
+        
+        data = buffer.Data();
+        size = buffer.Length();
+        bufferRef = Napi::Persistent(buffer);
 
         compression = options.Get("compression").As<Napi::Number>().Int32Value();
     }
@@ -149,11 +25,7 @@ public:
         struct heif_context* ctx = heif_context_alloc();
         struct heif_error err;
 
-        if (inputType == InputType::Buffer) {
-            err = heif_context_read_from_memory(ctx, data, size, nullptr);
-        } else {
-            err = heif_context_read_from_file(ctx, filePath.c_str(), nullptr);
-        }
+        err = heif_context_read_from_memory(ctx, data, size, nullptr);
 
         if (err.code != heif_error_Ok) {
             heif_context_free(ctx);
@@ -218,14 +90,34 @@ public:
             return;
         }
 
+        enum heif_color_profile_type cp_type =
+        heif_image_handle_get_color_profile_type(handle);
+        void* icc_buf = NULL;
+        size_t icc_len = 0;
+        if (cp_type == heif_color_profile_type_prof || cp_type == heif_color_profile_type_rICC) {
+            icc_len = heif_image_handle_get_raw_color_profile_size(handle);
+            if (icc_len) {
+                icc_buf = malloc(icc_len);
+                err = heif_image_handle_get_raw_color_profile(handle, icc_buf);
+                if (err.code != heif_error_Ok) {
+                    free(icc_buf);
+                    icc_buf = NULL;
+                    icc_len = 0;
+                }
+            }
+        }
+
         png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
         png_set_compression_level(png_ptr, compression);
         png_set_filter(png_ptr, 0, PNG_FILTER_NONE);
+        if (icc_buf && icc_len) {
+            png_set_iCCP(png_ptr, info_ptr, "ICC Profile", PNG_COMPRESSION_TYPE_BASE, static_cast<png_const_bytep>(icc_buf), icc_len);
+        }
 
         std::vector<uint8_t> pngData;
         png_set_write_fn(png_ptr, &pngData, [](png_structp png_ptr, png_bytep data, png_size_t length) {
-            std::vector<uint8_t>* p = (std::vector<uint8_t>*)png_get_io_ptr(png_ptr);
+            std::vector<uint8_t>* p = static_cast<std::vector<uint8_t>*>(png_get_io_ptr(png_ptr));
             p->insert(p->end(), data, data + length);
         }, nullptr);
 
@@ -244,6 +136,7 @@ public:
         heif_image_release(img);
         heif_image_handle_release(handle);
         heif_context_free(ctx);
+        free(icc_buf);
     }
 
     void OnOK() override {
@@ -253,36 +146,17 @@ public:
     }
 
 private:
-    InputType inputType;
     Napi::Reference<Napi::Buffer<uint8_t>> bufferRef;
     const uint8_t* data = nullptr;
     size_t size = 0;
-    std::string filePath;
     heif_item_id imageId;
     std::vector<uint8_t> pngBuffer;
     int compression;
 };
 
-Napi::Value ToJpeg(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-    Napi::Value input = info[0];
-
-    heif_item_id imageId = -1;
-    if (info[1].IsNumber()) {
-        imageId = info[1].As<Napi::Number>().Uint32Value();
-    }
-
-    Napi::Object options = info[2].As<Napi::Object>();
-    Napi::Function callback = info[3].As<Napi::Function>();
-
-    ToJpegWorker* worker = new ToJpegWorker(input, imageId, options, callback);
-    worker->Queue();
-    return env.Undefined();
-}
-
 Napi::Value ToPng(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    Napi::Value input = info[0];
+    Napi::Buffer<uint8_t> input = info[0].As<Napi::Buffer<uint8_t>>();
     
     heif_item_id imageId = -1;
     if (info[1].IsNumber()) {
@@ -297,64 +171,6 @@ Napi::Value ToPng(const Napi::CallbackInfo& info) {
     return env.Undefined();
 }
 
-Napi::Value ExtractIds(const Napi::CallbackInfo& info) {
-    Napi::Env env = info.Env();
-    InputType inputType;
-    const uint8_t* data = nullptr;
-    size_t size = 0;
-    std::string filePath;
-
-    Napi::Value input = info[0];
-
-    if (input.IsBuffer()) {
-        Napi::Buffer<uint8_t> buffer = input.As<Napi::Buffer<uint8_t>>();
-        data = buffer.Data();
-        size = buffer.Length();
-        inputType = InputType::Buffer;
-    } else {
-        filePath = input.As<Napi::String>();
-        inputType = InputType::File;
-    }
-
-    struct heif_context* ctx = heif_context_alloc();
-    if (!ctx) {
-        Napi::TypeError::New(env, "Failed to allocate HEIF context").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    struct heif_error err;
-    if (inputType == InputType::Buffer) {
-        err = heif_context_read_from_memory(ctx, data, size, nullptr);
-    } else {
-        err = heif_context_read_from_file(ctx, filePath.c_str(), nullptr);
-    }
-
-    if (err.code != heif_error_Ok) {
-        heif_context_free(ctx);
-        Napi::TypeError::New(env, "Failed to read HEIF data: " + std::string(err.message)).ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    int num_images = heif_context_get_number_of_top_level_images(ctx);
-    if (num_images <= 0) {
-        heif_context_free(ctx);
-        Napi::TypeError::New(env, "No images found in HEIF file").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    std::vector<heif_item_id> imageIDs(num_images);
-    heif_context_get_list_of_top_level_image_IDs(ctx, imageIDs.data(), num_images);
-
-    heif_context_free(ctx);
-
-    Napi::Array result = Napi::Array::New(env, imageIDs.size());
-    for (size_t i = 0; i < imageIDs.size(); ++i) {
-        result[i] = Napi::Number::New(env, imageIDs[i]);
-    }
-
-    return result;
-}
-
 Napi::String GetVersion(const Napi::CallbackInfo& info) {
     return Napi::String::New(info.Env(), heif_get_version());
 }
@@ -362,8 +178,6 @@ Napi::String GetVersion(const Napi::CallbackInfo& info) {
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "version"), Napi::Function::New(env, GetVersion));
     exports.Set(Napi::String::New(env, "toPng"), Napi::Function::New(env, ToPng));
-    exports.Set(Napi::String::New(env, "toJpeg"), Napi::Function::New(env, ToJpeg));
-    exports.Set(Napi::String::New(env, "extractIds"), Napi::Function::New(env, ExtractIds));
 
     return exports;
 }

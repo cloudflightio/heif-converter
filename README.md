@@ -66,37 +66,6 @@ console.log(lib.version());
 ```
 </details>
 <details>
-<summary>toJpeg</summary>
-<br>
-
-The **toJpeg** method converts the primary image of a HEIC file to **jpg**.
-> Converts only the primary image of the HEIC file.
-
-```ts
-interface JpegOptions {
-  // 0 to 100.
-  quality?: number;
-}
-
-function toJpeg(
-  input: string | Buffer | Readable, 
-  options?: JpegOptions
-): Promise<Buffer>;
-```
-```js
-// Import Node.js Dependencies
-import path from "node:path";
-
-// Import Internal Dependencies
-import lib from "../index.js";
-
-const filePath = path.join(__dirname, "image.heic")
-const jpegBuffer = await lib.toJpeg(filePath, { quality: 20 });
-```
-> The value of the quality option is from 0 to 100. Default 75.
-
-</details>
-<details>
 <summary>toPng</summary>
 <br>
 
@@ -104,7 +73,7 @@ The **toPng** method converts the primary image of a HEIC file to **png**.
 > Converts only the primary image of the HEIC file.
 
 ```ts
-function toPng(input: string | Buffer | Readable): Promise<Buffer>;
+function toPng(input: Buffer | Readable): Promise<Buffer>;
 ```
 ```js
 // Import Node.js Dependencies
@@ -117,42 +86,6 @@ const filePath = path.join(__dirname, "image.heic")
 const pngBuffer = await lib.toPng(filePath, { compression: 5 });
 ```
 > The value of the compression option is from 1 to 9. Default 1.
-
-</details>
-<details>
-<summary>extract</summary>
-<br>
-
-The **extract** method allows you to obtain a list of images contained in a HEIC file. Each extracted image has two methods, **toJpeg** and **toPng**, which allow you to convert the image to JPEG or PNG format, respectively, as documented above.
-```ts
-interface JpegOptions {
-  quality?: number;
-}
-
-interface PngOptions {
-  compression?: number;
-}
-
-interface ExtractedImage {
-  toJpeg: (opts?: JpegOptions) => Promise<Buffer>;
-  toPng: (opts?: PngOptions) => Promise<Buffer>;
-}
-
-function extract(input: string | Buffer | Readable): Promise<ExtractedImage[]>;
-```
-```js
-// Import Node.js Dependencies
-import path from "node:path";
-
-// Import Internal Dependencies
-import lib from "../index.js";
-
-const filePath = path.join(__dirname, "image.heic")
-const images = await lib.extract(filePath);
-for (image of images) {
-  const jpegBuffer = await image.toJpeg({ quality: 50 });
-}
-```
 
 </details>
 

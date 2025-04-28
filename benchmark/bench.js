@@ -24,16 +24,6 @@ async function run() {
   const buffer = await fs.readFile(filename);
 
   kBench
-    .add("JPG ==> heif-converter", async() => {
-      await lib.toJpeg(buffer, { quality: 10 });
-    })
-    .add("JPG ==> heic-convert", async() => {
-      await convert({
-        buffer,
-        format: "JPEG",
-        quality: 0.75
-      });
-    })
     .add("PNG ==> heif-converter", async() => {
       await lib.toPng(buffer);
     })
